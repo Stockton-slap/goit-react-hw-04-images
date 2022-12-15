@@ -16,49 +16,49 @@ export const App = () => {
   const [page, setPage] = useState(1);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState(Status.IDLE);
-  const [isShowBtn, setIsShowBtn] = useState(false);
-
-  const handleLoadMoreClick = () => {
-    setPage(page => page + 1);
-    setIsShowBtn(false);
-  };
+  const [totalImages, setTotalImages] = useState(0);
 
   useEffect(() => {
-    if (!imageName) {
+    if (imageName === '') {
       setStatus(Status.IDLE);
+      setImages([]);
+      setTotalImages(0);
     }
-    setImages([]);
-    setIsShowBtn(false);
+  }, [imageName]);
 
-    if (imageName !== '' || page > 1) {
-      setStatus(Status.PENDING);
+  const getImages = (pageNumber, query) => {
+    setPage(pageNumber);
+    setImageName(query);
+    setStatus(Status.PENDING);
 
-      fetchImages(imageName, page)
-        .then(({ data }) => {
-          const imagesValue = images.concat(data.hits);
+    if (query === '') {
+      setStatus(Status.IDLE);
 
-          setImages(
-            imagesValue.map(({ id, webformatURL, largeImageURL }) => ({
-              id,
-              webformatURL,
-              largeImageURL,
-            }))
-          );
-
-          setIsShowBtn(data.totalHits > imagesValue.length);
-          setStatus(Status.RESOLVED);
-        })
-        .catch(error => {
-          console.log(error);
-          setError(error);
-          setStatus(Status.REJECTED);
-        });
+      return;
     }
-  }, [imageName, images, page]);
+
+    fetchImages(query, pageNumber)
+      .then(({ data }) => {
+        setImages(prevImages => [...prevImages, ...data.hits]);
+        setTotalImages(data.totalHits);
+        setStatus(Status.RESOLVED);
+      })
+      .catch(error => {
+        setError(error);
+        setStatus(Status.REJECTED);
+      });
+  };
+
+  const handleLoadMoreClick = () => {
+    getImages(page + 1, imageName);
+  };
 
   const handleSearchSubmit = imageName => {
-    setImageName(imageName);
-    setPage(1);
+    setImages([]);
+
+    getImages(1, imageName);
+
+    setTotalImages(0);
   };
 
   return (
@@ -68,7 +68,7 @@ export const App = () => {
 
       <ImageGallery imageName={imageName} images={images} status={status} />
       {status === Status.PENDING && <Loader />}
-      {isShowBtn && <Button onClick={handleLoadMoreClick} />}
+      {totalImages > images.length && <Button onClick={handleLoadMoreClick} />}
     </div>
   );
 };

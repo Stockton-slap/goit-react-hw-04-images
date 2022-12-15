@@ -18,21 +18,13 @@ export const App = () => {
   const [status, setStatus] = useState(Status.IDLE);
   const [isShowBtn, setIsShowBtn] = useState(false);
 
-  // useEffect(() => {
-  //   if (imageName === '') {
-  //     setStatus(Status.IDLE);
-  //   }
-  // setImages([]);
-  // setIsShowBtn(false);
-  // }, [imageName]);
-
   const handleLoadMoreClick = () => {
     setPage(page => page + 1);
     setIsShowBtn(false);
   };
 
   useEffect(() => {
-    if (imageName === '') {
+    if (!imageName) {
       setStatus(Status.IDLE);
     }
     setImages([]);
@@ -62,7 +54,7 @@ export const App = () => {
           setStatus(Status.REJECTED);
         });
     }
-  }, [imageName, page]);
+  }, [imageName, images, page]);
 
   const handleSearchSubmit = imageName => {
     setImageName(imageName);

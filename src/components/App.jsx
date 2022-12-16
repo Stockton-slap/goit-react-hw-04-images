@@ -24,28 +24,30 @@ export const App = () => {
   };
 
   useEffect(() => {
-    if (!imageName) {
-      setStatus(Status.IDLE);
-    }
-    setImages([]);
     setIsShowBtn(false);
 
-    if (imageName !== '' || page > 1) {
+    if (!imageName) {
+      setStatus(Status.IDLE);
+      setImages([]);
+    }
+
+    if (imageName !== '') {
       setStatus(Status.PENDING);
 
       fetchImages(imageName, page)
         .then(({ data }) => {
-          const imagesValue = images.concat(data.hits);
+          const images = data.hits;
 
-          setImages(
-            imagesValue.map(({ id, webformatURL, largeImageURL }) => ({
+          setImages(prevImages => [
+            ...prevImages,
+            ...images.map(({ id, webformatURL, largeImageURL }) => ({
               id,
               webformatURL,
               largeImageURL,
-            }))
-          );
+            })),
+          ]);
 
-          setIsShowBtn(data.totalHits > imagesValue.length);
+          setIsShowBtn(data.totalHits > images.length);
           setStatus(Status.RESOLVED);
         })
         .catch(error => {
@@ -58,6 +60,7 @@ export const App = () => {
 
   const handleSearchSubmit = imageName => {
     setImageName(imageName);
+    setImages([]);
     setPage(1);
   };
 

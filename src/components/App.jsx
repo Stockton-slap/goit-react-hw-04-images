@@ -16,49 +16,49 @@ export const App = () => {
   const [page, setPage] = useState(1);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState(Status.IDLE);
-  const [totalImages, setTotalImages] = useState(0);
-
-  useEffect(() => {
-    if (imageName === '') {
-      setStatus(Status.IDLE);
-      setImages([]);
-      setTotalImages(0);
-    }
-  }, [imageName]);
-
-  const getImages = (pageNumber, query) => {
-    setPage(pageNumber);
-    setImageName(query);
-    setStatus(Status.PENDING);
-
-    if (query === '') {
-      setStatus(Status.IDLE);
-
-      return;
-    }
-
-    fetchImages(query, pageNumber)
-      .then(({ data }) => {
-        setImages(prevImages => [...prevImages, ...data.hits]);
-        setTotalImages(data.totalHits);
-        setStatus(Status.RESOLVED);
-      })
-      .catch(error => {
-        setError(error);
-        setStatus(Status.REJECTED);
-      });
-  };
+  const [isShowBtn, setIsShowBtn] = useState(false);
 
   const handleLoadMoreClick = () => {
-    getImages(page + 1, imageName);
+    setPage(page => page + 1);
+    setIsShowBtn(false);
   };
 
-  const handleSearchSubmit = imageName => {
+  useEffect(() => {
+    if (!imageName) {
+      setStatus(Status.IDLE);
+    }
     setImages([]);
+    setIsShowBtn(false);
 
-    getImages(1, imageName);
+    if (imageName !== '' || page > 1) {
+      setStatus(Status.PENDING);
 
-    setTotalImages(0);
+      fetchImages(imageName, page)
+        .then(({ data }) => {
+          const imagesValue = images.concat(data.hits);
+
+          setImages(
+            imagesValue.map(({ id, webformatURL, largeImageURL }) => ({
+              id,
+              webformatURL,
+              largeImageURL,
+            }))
+          );
+
+          setIsShowBtn(data.totalHits > imagesValue.length);
+          setStatus(Status.RESOLVED);
+        })
+        .catch(error => {
+          console.log(error);
+          setError(error);
+          setStatus(Status.REJECTED);
+        });
+    }
+  }, [imageName, page]);
+
+  const handleSearchSubmit = imageName => {
+    setImageName(imageName);
+    setPage(1);
   };
 
   return (
@@ -68,7 +68,7 @@ export const App = () => {
 
       <ImageGallery imageName={imageName} images={images} status={status} />
       {status === Status.PENDING && <Loader />}
-      {totalImages > images.length && <Button onClick={handleLoadMoreClick} />}
+      {isShowBtn && <Button onClick={handleLoadMoreClick} />}
     </div>
   );
 };
